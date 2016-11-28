@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "base64.h"
 
@@ -29,9 +30,10 @@ DEC    26     | 6      | 21     | 44     | 27     | 6      | 60     | 0
 Base64 a      | G      | V      | s      | b      | G      | 8      | =
 
 */
-	
+
+
 char *
-base64_encode(char *input, int size)
+base64_encode_bytes(unsigned char *input, size_t size)
 {
     int len = 4 * size / 3;
     while (len < 4 || len % 4 !=0) {
@@ -74,7 +76,8 @@ base64_encode(char *input, int size)
     return output;
 }
 
-int pos(char c)
+int
+pos(char c)
 {
     char *p;
     for(p = base64; *p; p++) {
@@ -85,29 +88,37 @@ int pos(char c)
     return -1;
 }
 
-char *
-base64_decode(char *input)
+unsigned char *
+base64_decode(char *input, size_t *decoded_length)
 {
-    int size = (strlen(input) * 3) / 4;
+    size_t length = strlen(input);
+    size_t paddingIndex;
+    size_t size;
+
+    char *firstPadding = strchr(input, '=');
+
+    if (firstPadding != NULL) {
+        paddingIndex = (size_t)(firstPadding - input);
+        paddingIndex = length - paddingIndex;
+        size = ((length*3)/4) - paddingIndex;
+    } else {
+        size = ((length*3)/4);
+    }
+
+    *decoded_length = size;
+
     int bitBlock;
     int bytes[4];
     int i = 0;
     int j = 0;
-    char *decoded = calloc(size + 1, sizeof(char));
+    unsigned char *decoded = calloc(size, sizeof(char));
 
-    for (i=i; i<size; i+=4) {
+    for (i=i; i<length; i+=4) {
         bytes[0] = pos(input[i]);
         bytes[1] = pos(input[i+1]);
         bytes[2] = pos(input[i+2]);
         bytes[3] = pos(input[i+3]);
 
-        if (bytes[2] == 64) {
-            bytes[2] = 0;
-        }
-
-        if (bytes[3] == 64) {
-            bytes[3] = 0;
-        }
 
         unsigned int block24 = bytes[0]  << 6 | bytes[1];
 
@@ -116,16 +127,14 @@ base64_decode(char *input)
 
         decoded[j++] = ((block24 >> 16) & 0xFF);
 
-        if (bytes[2] != 0) {
+        if (bytes[2] < 64) {
             decoded[j++] = ((block24 >> 8) & 0xFF);
         }
 
-        if (bytes[3] != 0) {
+        if (bytes[3] < 64) {
             decoded[j++] = ((block24) & 0xFF);
         }
     }
-
-    decoded[size] = '\0';
 
     return decoded;
 }

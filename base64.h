@@ -3,12 +3,13 @@
 
 static char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-int pos(char c);
+int
+pos(char c);
 
 char *
-base64_encode(char *input, int size);
+base64_encode_bytes(unsigned char *input, size_t size);
 
-char *
-base64_decode(char *input);
+unsigned char *
+base64_decode(char *input, size_t *decoded_length);
 
 #endif
